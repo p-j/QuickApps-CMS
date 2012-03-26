@@ -48,12 +48,33 @@ class QuickAppsComponent extends Component {
     public function beforeRender(Controller $Controller) {
         if ($this->Controller->request->is('ajax')) {
             $this->Controller->layout = 'ajax';
-        } elseif ($this->is('view.node')) {
-            // node-type based layout
-            $tp = App::themePath(Configure::read('Theme.info.folder'));
+        } else {
+            $nodeType = false;
 
-            if (file_exists($tp . 'Layouts' . DS . 'node_' . $this->Controller->Layout['node']['NodeType']['id'] . '.ctp')) {
-                $this->Controller->layout = 'node_' . $this->Controller->Layout['node']['NodeType']['id'];
+            if (!$this->Controller->request->is('requested') &&
+                $this->is('view.node') &&
+                isset($this->Controller->Layout['node']['NodeType']['id'])
+            ) {
+                $nodeType = $this->Controller->Layout['node']['NodeType']['id'];
+            } elseif (
+                strtolower($this->Controller->request->params['plugin']) == 'node' &&
+                $this->Controller->request->params['controller'] == 'node' &&
+                $this->Controller->request->params['action'] == 'index' &&
+                $siteFrontPage = Configure::read('Variable.site_frontpage')
+            ) {
+                $params = Router::parse($siteFrontPage);
+
+                if (isset($params['pass'][0])) {
+                    $nodeType = $params['pass'][0];
+                }
+            }
+
+            if ($nodeType) {
+                $tp = App::themePath(Configure::read('Theme.info.folder'));
+
+                if (file_exists($tp . 'Layouts' . DS . 'node_' . $nodeType . '.ctp')) {
+                    $this->Controller->layout = 'node_' . $nodeType;
+                }
             }
         }
 
